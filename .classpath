@@ -6,6 +6,6 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/nooma/eclipse-workspace/maniascript-completion-updater/lib/jsoup-1.11.3.jar"/>
+	<classpathentry kind="lib" path="lib/jsoup-1.11.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
