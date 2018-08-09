@@ -118,7 +118,7 @@ String JsonFile;
 				
 				ArrayList<String> metho = new ArrayList<String>();
 				ArrayList<String> attri = new ArrayList<String>();
-				ArrayList<String> enume = new ArrayList<String>();
+				ArrayList<String> enums = new ArrayList<String>();
 				
 				for(int i = 0; i < info.size(); i++) {
 					if(info.get(i).attr("class").contains("memitem") && !(info.get(i).attr("class").contains("inherit"))) {
@@ -126,7 +126,7 @@ String JsonFile;
 						if (text.contains("(") && !text.contains("=")) {
 							metho.add(text);
 						} else if (text.contains("{")) {
-							enume.add(text);
+							enums.add(text);
 						} else {
 							if(text.contains("const")) {
 								text = text.substring(6, text.length());
@@ -136,14 +136,20 @@ String JsonFile;
 					}
 				}
 				
-				JsonFile += "\n\t\t\"" + nameStruct + "\": {\n\t\t\t\"props\": {";
+				JsonFile += "\n\t\t\"" + nameStruct + "\": {\n\t\t\t\"enums\": {";
 				
-				Boolean emptyA = attri.isEmpty();
-				if(!attri.isEmpty())
-					addProps(attri);
-				if(emptyA) {
+				if(enums.isEmpty()) {
+					JsonFile += "},\n\t\t\t\"props\": {";
+				} else {
+					addEnums(enums);
+					JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+					JsonFile += "\n\t\t\t},\n\t\t\t\"props\": {";
+				}
+				
+				if(attri.isEmpty()) {
 					JsonFile += "},\n\t\t\t\"methods\": [";
 				} else {
+					addProps(attri);
 					JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 					JsonFile += "\n\t\t\t\t]\n\t\t\t},\n\t\t\t\"methods\": [";
 				}
@@ -168,6 +174,23 @@ String JsonFile;
 		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 		JsonFile += "\n\t}\n}";
 		
+	}
+	
+	
+	public void addEnums(ArrayList<String> enums) {
+		for(String enumString : enums) {
+			String nameCurrent = enumString.substring(5, enumString.indexOf("{")-1);
+			String[] values = enumString.substring(enumString.indexOf("{")+2, enumString.indexOf("}")-1).split(", ");
+			
+			JsonFile += "\n\t\t\t\t\"" + nameCurrent + "\": [";
+			
+			for(String val : values) {
+				JsonFile += "\n\t\t\t\t\t\"" + val + "\",";
+			}
+			
+			JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+			JsonFile += "\n\t\t\t\t],";
+		}
 	}
 	
 	/**
@@ -252,6 +275,8 @@ String JsonFile;
 	 */
 	public Boolean finishFile() {
 		updateBar("Finishing");
+		
+		System.out.println(JsonFile);
 		
 		File outputFile = new File("completions.json");
 		outputFile.delete();
