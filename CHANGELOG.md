@@ -1,4 +1,4 @@
-#Change Log
+# Change Log
 Lastest informations about maniascript-completion-updater
 
 ## 1.1
