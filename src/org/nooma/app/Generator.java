@@ -13,10 +13,11 @@ import javax.swing.SwingUtilities;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class Generator extends JPanel {
-String JsonFile;
+	String JsonFile;
 	
 	ArrayList<String> _classes;
 	ArrayList<String> _primitives;
@@ -25,6 +26,9 @@ String JsonFile;
 	JLabel currentAdding;
 	int compteur = 0;
 	
+	/**
+	 * Constructor of the Generator class
+	 */
 	public Generator() {
 		try {
 			Document doc = Jsoup.connect("https://www.uaseco.org/maniascript/2018-03-29/annotated.html").get();
@@ -33,12 +37,13 @@ String JsonFile;
 			_classes = new ArrayList<String>();
 			_primitives = new ArrayList<String>();
 			
-			for(int i = 0; i < links.size(); i++) {
-				if(!links.get(i).attr("class").equals("")) {
-					if(links.get(i).attr("href").contains("class"))
-						_primitives.add(links.get(i).attr("abs:href"));
+			for(Element link : links) {
+				if(!link.attr("class").equals("")) {
+					String linkString = link.attr("abs:href");
+					if(linkString.contains("class"))
+						_primitives.add(linkString);
 					else
-						_classes.add(links.get(i).attr("abs:href"));
+						_classes.add(linkString);
 				}
 			}
 			
@@ -57,6 +62,10 @@ String JsonFile;
 		}
 	}
 	
+	/**
+	 * Update the progress bar and the label
+	 * @param name String to put in the label
+	 */
 	public void updateBar(String name) {
 		try {
 			SwingUtilities.invokeLater(new Runnable() {
@@ -71,6 +80,10 @@ String JsonFile;
 		}
 	}
 	
+	/**
+	 * Do all the steps to add info to json file
+	 * @return Return true if the file has correctly been created
+	 */
 	public Boolean generate() {
 		addPrimitivesInFile();
 		addCLassesInFile();
@@ -102,16 +115,15 @@ String JsonFile;
 	}
 	
 	/**
-	 * Main function that add all the classes in the completion file
+	 * Function that add all the classes in the completion file
 	 */
 	public void addCLassesInFile() {
 		
 		JsonFile += "\t\"classes\": {";
 		
-		//for(String url : _classes) {
+		for(String url : _classes) {
 			try {
-				//Document doc = Jsoup.connect(url).get();
-				Document doc = Jsoup.connect(_classes.get(61)).get();
+				Document doc = Jsoup.connect(url).get();
 				String nameClass = (doc.title().split(" "))[1];
 				updateBar("Adding : " + nameClass);
 				
@@ -121,9 +133,9 @@ String JsonFile;
 				ArrayList<String> attri = new ArrayList<String>();
 				ArrayList<String> enums = new ArrayList<String>();
 				
-				for(int i = 0; i < info.size(); i++) {
-					if(info.get(i).attr("class").contains("memitem") && !(info.get(i).attr("class").contains("inherit"))) {
-						String text = info.get(i).text();
+				for(Element e : info) {
+					if(e.attr("class").contains("memitem") && !(e.attr("class").contains("inherit"))) {
+						String text = e.text();
 						if (text.contains("(") && !text.contains("=")) {
 							metho.add(text);
 						} else if (text.contains("{")) {
@@ -159,29 +171,28 @@ String JsonFile;
 					JsonFile += "\n\t\t\t\t]\n\t\t\t},\n\t\t\t\"methods\": [";
 				}
 				
-				Boolean emptyM = metho.isEmpty();
-				addMethods(metho);
-				
-				JsonFile = JsonFile.substring(0, JsonFile.length()-1);
-				
-				if(emptyM) {
-					JsonFile += "[]\n\t\t},";
+				if(metho.isEmpty()) {
+					JsonFile += "]\n\t\t},";
 				} else {
-					
+					addMethods(metho);
+					JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 					JsonFile += "\n\t\t\t]\n\t\t},";
 				}
 				compteur++;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		//}
+		}
 		
 		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 		JsonFile += "\n\t}\n}";
 		
 	}
 	
-	
+	/**
+	 * Function that add all the enum of a specific class
+	 * @param enums ArrayList of all the strings needed
+	 */
 	public void addEnums(ArrayList<String> enums) {
 		for(String enumString : enums) {
 			String nameCurrent = enumString.substring(5, enumString.indexOf("{")-1);
@@ -212,8 +223,7 @@ String JsonFile;
 			JsonFile += "\n\t\t\t\t\"" + currentProp + "\": [";
 		}
 		
-		while(!props.isEmpty()) {
-			String processProp = props.get(0);
+		for(String processProp : props) {
 			Boolean needSwitch = false;
 			
 			if(!processProp.contains(currentProp) || (processProp.contains("[") && !currentProp.contains("["))) needSwitch = true;
@@ -221,20 +231,18 @@ String JsonFile;
 			if(needSwitch) {
 				JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 				JsonFile += "\n\t\t\t\t],";
-				currentProp = (props.get(0).split(" "))[0];
-				if(props.get(0).contains("[")) {
+				currentProp = (processProp.split(" "))[0];
+				if(processProp.contains("[")) {
 					JsonFile += "\n\t\t\t\t\"" + currentProp + "[]\": [";
 					currentProp = currentProp + " []";
 				} else {
 					JsonFile += "\n\t\t\t\t\"" + currentProp + "\": [";
 				}
+			}
+			if(processProp.contains("[")) {
+				JsonFile += "\n\t\t\t\t\t\"" + (processProp.split(" "))[2] + "\",";
 			} else {
-				if(processProp.contains("[")) {
-					JsonFile += "\n\t\t\t\t\t\"" + (processProp.split(" "))[2] + "\",";
-				} else {
-					JsonFile += "\n\t\t\t\t\t\"" + (processProp.split(" "))[1] + "\",";
-				}
-				props.remove(0);
+				JsonFile += "\n\t\t\t\t\t\"" + (processProp.split(" "))[1] + "\",";
 			}
 		}
 	}
@@ -244,34 +252,24 @@ String JsonFile;
 	 * @param methods ArrayList of all the strings needed
 	 */
 	public void addMethods(ArrayList<String> methods) {
-		while(!(methods.isEmpty())){
-			String info = methods.get(0);
-			String returnType = (info.split(" "))[0];
-			String methName = (info.split(" "))[1];
-			String[] parameters = info.substring(info.indexOf('(')+1, info.length()-1).split(", ");
-			Boolean noParam = false;
+		for(String meth : methods) {
+			String returnType = (meth.split(" "))[0];
+			String methName = (meth.split(" "))[1];
+			String[] parameters = meth.substring(meth.indexOf('(')+1, meth.length()-1).split(", ");
 			
 			JsonFile += "\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"" + methName + "\",\n\t\t\t\t\t\"returns\": \"" + returnType + "\",\n\t\t\t\t\t\"params\": [";
 			
-			for (String t : parameters) {
-				if(t.equals("")) {
-					JsonFile += "]";
-					noParam = true;
-				} else {
+			if(parameters[0].equals("")) {
+				JsonFile += "]\n\t\t\t\t},";
+			} else {
+				for (String t : parameters) {
 					String ident = (t.split(" "))[0];
 					String arg = (t.split(" "))[1];
-					
 					JsonFile += "\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"identifier\": \"" + ident + "\",\n\t\t\t\t\t\t\t\"argument\": \"" + arg + "\"\n\t\t\t\t\t\t},";
-				}	
-			}
-			methods.remove(0);
-			if(noParam) {
-				JsonFile += "\n\t\t\t\t},";
-			} else {
+				}
 				JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 				JsonFile += "\n\t\t\t\t\t]\n\t\t\t\t},";
-			}
-			
+			}		
 		}
 	}
 	
@@ -280,8 +278,6 @@ String JsonFile;
 	 */
 	public Boolean finishFile() {
 		updateBar("Finishing");
-		
-		System.out.println(JsonFile);
 		
 		File outputFile = new File("completions.json");
 		outputFile.delete();
