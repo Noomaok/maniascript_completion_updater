@@ -108,11 +108,12 @@ String JsonFile;
 		
 		JsonFile += "\t\"classes\": {";
 		
-		for(String url : _classes) {
+		//for(String url : _classes) {
 			try {
-				Document doc = Jsoup.connect(url).get();
-				String nameStruct = (doc.title().split(" "))[1];
-				updateBar("Adding : " + nameStruct);
+				//Document doc = Jsoup.connect(url).get();
+				Document doc = Jsoup.connect(_classes.get(61)).get();
+				String nameClass = (doc.title().split(" "))[1];
+				updateBar("Adding : " + nameClass);
 				
 				Elements info = doc.select("tr");
 				
@@ -136,7 +137,11 @@ String JsonFile;
 					}
 				}
 				
-				JsonFile += "\n\t\t\"" + nameStruct + "\": {\n\t\t\t\"enums\": {";
+				String inherit = doc.select("area").first().attr("alt");
+				if(nameClass.equals("CNod"))
+					inherit = "";
+				
+				JsonFile += "\n\t\t\"" + nameClass + "\": {\n\t\t\t\"inherit\": \"" + inherit + "\",\n\t\t\t\"enums\": {";
 				
 				if(enums.isEmpty()) {
 					JsonFile += "},\n\t\t\t\"props\": {";
@@ -169,7 +174,7 @@ String JsonFile;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
+		//}
 		
 		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 		JsonFile += "\n\t}\n}";
