@@ -18,8 +18,8 @@ import org.jsoup.select.Elements;
 public class Generator extends JPanel {
 String JsonFile;
 	
-	ArrayList<String> _struct;
-	ArrayList<String> _class;
+	ArrayList<String> _classes;
+	ArrayList<String> _primitives;
 	
 	JProgressBar pBar;
 	JLabel currentAdding;
@@ -30,15 +30,15 @@ String JsonFile;
 			Document doc = Jsoup.connect("https://www.uaseco.org/maniascript/2018-03-29/annotated.html").get();
 			
 			Elements links = doc.select("a");
-			_struct = new ArrayList<String>();
-			_class = new ArrayList<String>();
+			_classes = new ArrayList<String>();
+			_primitives = new ArrayList<String>();
 			
 			for(int i = 0; i < links.size(); i++) {
 				if(!links.get(i).attr("class").equals("")) {
 					if(links.get(i).attr("href").contains("class"))
-						_class.add(links.get(i).attr("abs:href"));
+						_primitives.add(links.get(i).attr("abs:href"));
 					else
-						_struct.add(links.get(i).attr("abs:href"));
+						_classes.add(links.get(i).attr("abs:href"));
 				}
 			}
 			
@@ -49,7 +49,7 @@ String JsonFile;
 			
 			pBar = new JProgressBar();
 			pBar.setMinimum(0);
-			pBar.setMaximum(_class.size()+_struct.size());
+			pBar.setMaximum(_primitives.size()+_classes.size());
 			add(pBar);
 			
 		} catch (IOException e) {
@@ -72,19 +72,19 @@ String JsonFile;
 	}
 	
 	public Boolean generate() {
-		addClassInFile();
-		addStructInFile();
+		addPrimitivesInFile();
+		addCLassesInFile();
 		return finishFile();
 	}
 	
 	/**
 	 * Function that add different types to completion file
 	 */
-	public void addClassInFile() {
+	public void addPrimitivesInFile() {
 		
 		JsonFile = "{\n\t\"primitives\": [";
 		
-		for(String url : _class) {
+		for(String url : _primitives) {
 			try {
 				Document doc = Jsoup.connect(url).get();
 				String name = (doc.title().split(" "))[1];
@@ -104,11 +104,11 @@ String JsonFile;
 	/**
 	 * Main function that add all the classes in the completion file
 	 */
-	public void addStructInFile() {
+	public void addCLassesInFile() {
 		
 		JsonFile += "\t\"classes\": {";
 		
-		for(String url : _struct) {
+		for(String url : _classes) {
 			try {
 				Document doc = Jsoup.connect(url).get();
 				String nameStruct = (doc.title().split(" "))[1];
