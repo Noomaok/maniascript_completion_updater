@@ -31,7 +31,7 @@ public class Generator extends JPanel {
 	 */
 	public Generator() {
 		try {
-			Document doc = Jsoup.connect("https://www.uaseco.org/maniascript/2018-03-29/annotated.html").get();
+			Document doc = Jsoup.connect("https://maniaplanet.github.io/maniascript-reference/annotated.html").get();
 			
 			Elements links = doc.select("a");
 			_classes = new ArrayList<String>();
@@ -100,7 +100,7 @@ public class Generator extends JPanel {
 		for(String url : _primitives) {
 			try {
 				Document doc = Jsoup.connect(url).get();
-				String name = (doc.title().split(" "))[1];
+				String name = (doc.title().split(" "))[2];
 				updateBar("Adding : " + name);
 				
 				JsonFile += "\n\t\t\"" + name + "\",";
@@ -124,7 +124,7 @@ public class Generator extends JPanel {
 		for(String url : _classes) {
 			try {
 				Document doc = Jsoup.connect(url).get();
-				String nameClass = (doc.title().split(" "))[1];
+				String nameClass = (doc.title().split(" "))[2];
 				updateBar("Adding : " + nameClass);
 				
 				Elements info = doc.select("tr");
@@ -149,9 +149,16 @@ public class Generator extends JPanel {
 					}
 				}
 				
-				String inherit = doc.select("area").first().attr("alt");
-				if(nameClass.equals("CNod"))
+				
+				String inherit;
+				try {
+					inherit = doc.select("area").first().attr("alt");
+					if(nameClass.equals("CNod"))
+						inherit = "";
+					
+				} catch(NullPointerException e) {
 					inherit = "";
+				}
 				
 				JsonFile += "\n\t\t\"" + nameClass + "\": {\n\t\t\t\"inherit\": \"" + inherit + "\",\n\t\t\t\"enums\": {";
 				

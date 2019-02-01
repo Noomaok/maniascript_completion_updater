@@ -1,6 +1,10 @@
 # Change Log
 Lastest informations about maniascript-completion-updater
 
+## 1.3
+
+Change url and some format for better implementation
+
 ## 1.2
 
 Adding inheritance  
