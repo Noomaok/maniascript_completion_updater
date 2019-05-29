@@ -1,2 +1,5 @@
 #Ignore target folder
 /target
+
+#Ignore output file
+completions.json

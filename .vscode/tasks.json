@@ -16,6 +16,12 @@
             "group": "build"
         },
         {
+            "label": "compile&run",
+            "type": "shell",
+            "command": "mvn compile exec:java",
+            "group": "build"
+        },
+        {
             "label": "jar",
             "type": "shell",
             "command": "mvn package",

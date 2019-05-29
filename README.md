@@ -7,14 +7,13 @@ You need to have Maven install in order to run the project
 
 # Run project
 ## Using VSCode
-Launch both compile and run task to test the project  
+Launch both compile&run task to test the project  
 Launch jar task to create a Jar executable
 
 ## Command line
 To compile and run project  
 ```
-mvn compile
-mvn exec:java
+mvn compile exec:java 
 ```
 
 To create a Jar executable  

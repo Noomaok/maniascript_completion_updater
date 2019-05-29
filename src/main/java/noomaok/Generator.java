@@ -23,6 +23,7 @@ public class Generator extends JPanel {
 	
 	ArrayList<String> _classes;
 	ArrayList<String> _primitives;
+	ArrayList<String> _namespaces;
 	
 	JProgressBar pBar;
 	JLabel currentAdding;
@@ -33,19 +34,29 @@ public class Generator extends JPanel {
 	 */
 	public Generator() {
 		try {
-			Document doc = Jsoup.connect("https://maniaplanet.github.io/maniascript-reference/annotated.html").get();
+			Document docClasses = Jsoup.connect("https://maniaplanet.github.io/maniascript-reference/annotated.html").get();
+			Document docNamespaces = Jsoup.connect("https://maniaplanet.github.io/maniascript-reference/namespaces.html").get();
 			
-			Elements links = doc.select("a");
+			Elements linksClasses = docClasses.select("a");
 			_classes = new ArrayList<String>();
 			_primitives = new ArrayList<String>();
 			
-			for(Element link : links) {
+			for(Element link : linksClasses) {
 				if(!link.attr("class").equals("")) {
 					String linkString = link.attr("abs:href");
 					if(linkString.contains("class"))
 						_primitives.add(linkString);
 					else
 						_classes.add(linkString);
+				}
+			}
+
+			Elements linksNamespaces = docNamespaces.select("a");
+			_namespaces = new ArrayList<String>();
+
+			for(Element link : linksNamespaces) {
+				if(!link.attr("class").equals("")) {
+					_namespaces.add(link.attr("abs:href"));
 				}
 			}
 			
@@ -56,7 +67,7 @@ public class Generator extends JPanel {
 			
 			pBar = new JProgressBar();
 			pBar.setMinimum(0);
-			pBar.setMaximum(_primitives.size()+_classes.size());
+			pBar.setMaximum(_primitives.size()+_classes.size()+_namespaces.size());
 			add(pBar);
 			
 		} catch (IOException e) {
@@ -87,17 +98,90 @@ public class Generator extends JPanel {
 	 * @return Return true if the file has correctly been created
 	 */
 	public Boolean generate() {
+		addNamespacesInFile();
 		addPrimitivesInFile();
 		addCLassesInFile();
 		return finishFile();
 	}
-	
+
+	/**
+	 * Function that add different namespaces to completion file
+	 */
+	public void addNamespacesInFile() {
+		JsonFile = "{\n\t\"namespaces\": {";
+
+		for(String url : _namespaces) {
+			try {
+				Document doc = Jsoup.connect(url).get();
+				String name = (doc.title().split(" "))[2];
+				updateBar("Adding : " + name);
+
+				JsonFile += "\n\t\t\"" + name + "\": [";
+				compteur++;
+
+				Elements info = doc.select("tr");
+				ArrayList<String> methods = new ArrayList<String>();
+
+				for(Element e : info) {
+					if(e.attr("class").contains("memitem"))
+					{
+						if(!e.text().contains("enum")) {
+							methods.add(e.text());
+						}
+					}
+				}
+				addNamespaceMethods(methods);
+				
+				JsonFile += "\n\t\t],";
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+		JsonFile += "\n\t},";
+	}
+
+	/**
+	 * Function that add all the method of a specific namespace
+	 * @param methods
+	 */
+	public void addNamespaceMethods(ArrayList<String> methods) {
+		for(String meth : methods) {
+			if(meth.contains("Join")) {
+				System.out.println(meth);
+			}
+			String returnType = (meth.split(" "))[0];
+			String methName = (meth.split(" "))[1];
+			if(methName.contains("[Void]")) {
+				returnType += "[Void]";
+				methName = (meth.split(" "))[2];
+			}
+			String[] parameters = meth.substring(meth.indexOf('(')+1, meth.length()-1).split(", ");
+			
+			JsonFile += "\n\t\t\t{\n\t\t\t\t\"name\": \"" + methName + "\",\n\t\t\t\t\"returns\": \"" + returnType + "\",\n\t\t\t\t\"params\": [";
+			
+			if(parameters[0].equals("")) {
+				JsonFile += "]\n\t\t\t},";
+			} else {
+				for (String t : parameters) {
+					String ident = (t.split(" "))[0];
+					String arg = (t.split(" "))[1];
+					JsonFile += "\n\t\t\t\t\t{\n\t\t\t\t\t\t\"identifier\": \"" + ident + "\",\n\t\t\t\t\t\t\"argument\": \"" + arg + "\"\n\t\t\t\t\t},";
+				}
+				JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+				JsonFile += "\n\t\t\t\t]\n\t\t\t},";
+			}
+		}
+		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+	}
+
 	/**
 	 * Function that add different types to completion file
 	 */
 	public void addPrimitivesInFile() {
 		
-		JsonFile = "{\n\t\"primitives\": [";
+		JsonFile += "\n\t\"primitives\": [";
 		
 		for(String url : _primitives) {
 			try {
@@ -294,17 +378,17 @@ public class Generator extends JPanel {
 		File outputFile = new File("completions.json");
 		outputFile.delete();
 		
-		File outputFile2 = new File("tmlanguage.txt");
-		outputFile2.delete();
+		// File outputFile2 = new File("tmlanguage.txt");
+		// outputFile2.delete();
 		
 		try {
 			PrintWriter out = new PrintWriter("completions.json");
 			out.println(JsonFile);
 			out.close();
-			PrintWriter out2 = new PrintWriter("tmlanguage.txt");
-			out2.println(ClassNames);
-			out2.println(EnumNames);
-			out2.close();
+			// PrintWriter out2 = new PrintWriter("tmlanguage.txt");
+			// out2.println(ClassNames);
+			// out2.println(EnumNames);
+			// out2.close();
 			return true;
 		} catch(IOException e) {
 			e.printStackTrace();
