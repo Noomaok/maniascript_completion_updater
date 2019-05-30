@@ -1,6 +1,11 @@
 # Change Log
 Lastest informations about maniascript-completion-updater
 
+## 2.0
+
+Change to a Maven project  
+Add namespace items
+
 ## 1.3
 
 Change url and some format for better implementation
