@@ -148,9 +148,6 @@ public class Generator extends JPanel {
 	 */
 	public void addNamespaceMethods(ArrayList<String> methods) {
 		for(String meth : methods) {
-			if(meth.contains("Join")) {
-				System.out.println(meth);
-			}
 			String returnType = (meth.split(" "))[0];
 			String methName = (meth.split(" "))[1];
 			if(methName.contains("[Void]")) {

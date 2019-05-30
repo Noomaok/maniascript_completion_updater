@@ -6,7 +6,7 @@
         {
             "label": "compile",
             "type": "shell",
-            "command": "mvn compile",
+            "command": "mvn clean compile",
             "group": "build"
         },
         {
@@ -18,13 +18,13 @@
         {
             "label": "compile&run",
             "type": "shell",
-            "command": "mvn compile exec:java",
+            "command": "mvn clean compile exec:java",
             "group": "build"
         },
         {
             "label": "jar",
             "type": "shell",
-            "command": "mvn package",
+            "command": "mvn clean package",
             "group": "build"
         }
     ]
