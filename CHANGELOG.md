@@ -1,6 +1,10 @@
 # Change Log
 Lastest informations about maniascript-completion-updater
 
+## 2.1
+
+Add enum for namespace
+
 ## 2.0
 
 Change to a Maven project  

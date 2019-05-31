@@ -80,17 +80,12 @@ public class Generator extends JPanel {
 	 * @param name String to put in the label
 	 */
 	public void updateBar(String name) {
-		try {
-			SwingUtilities.invokeLater(new Runnable() {
-				public void run() {
-					currentAdding.setText(name);
-					pBar.setValue(compteur);
-				}
-			});
-			java.lang.Thread.sleep(100);
-		} catch (InterruptedException e) {
-			
-		}
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				currentAdding.setText(name);
+				pBar.setValue(compteur);
+			}
+		});
 	}
 	
 	/**
@@ -116,11 +111,12 @@ public class Generator extends JPanel {
 				String name = (doc.title().split(" "))[2];
 				updateBar("Adding : " + name);
 
-				JsonFile += "\n\t\t\"" + name + "\": [";
+				JsonFile += "\n\t\t\"" + name + "\": {";
 				compteur++;
 
 				Elements info = doc.select("tr");
 				ArrayList<String> methods = new ArrayList<String>();
+				ArrayList<String> enums = new ArrayList<String>();
 
 				for(Element e : info) {
 					if(e.attr("class").contains("memitem"))
@@ -128,11 +124,15 @@ public class Generator extends JPanel {
 						if(!e.text().contains("enum")) {
 							methods.add(e.text());
 						}
+						else {
+							enums.add(e.text());
+						}
 					}
 				}
+				addNamespaceEnums(enums);
 				addNamespaceMethods(methods);
 				
-				JsonFile += "\n\t\t],";
+				JsonFile += "\n\t\t},";
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -141,12 +141,44 @@ public class Generator extends JPanel {
 		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
 		JsonFile += "\n\t},";
 	}
+	
+	/**
+	 * Function that add all the enums of a specific namespace
+	 * @param enums
+	 */
+	public void addNamespaceEnums(ArrayList<String> enums) {
+		JsonFile += "\n\t\t\t\"enums\": {";
+
+		for(String currentEnum : enums) {
+			String enumName = currentEnum.split(" ")[1];
+			String[] values = currentEnum.substring(currentEnum.indexOf("{")+2, currentEnum.indexOf("}")-1).split(", ");
+
+			JsonFile += "\n\t\t\t\t\"" + enumName + "\": [";
+			for(String value : values) {
+				JsonFile += "\n\t\t\t\t\t\"" + value + "\",";
+			}
+
+			JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+			JsonFile += "\n\t\t\t\t],";
+		}
+
+		if(enums.isEmpty()) {
+			JsonFile += "},";
+		}
+		else {
+			JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+			JsonFile += "\n\t\t\t},";
+		}
+	}
 
 	/**
-	 * Function that add all the method of a specific namespace
+	 * Function that add all the methods of a specific namespace
 	 * @param methods
 	 */
 	public void addNamespaceMethods(ArrayList<String> methods) {
+
+		JsonFile += "\n\t\t\t\"methods\": [";
+
 		for(String meth : methods) {
 			String returnType = (meth.split(" "))[0];
 			String methName = (meth.split(" "))[1];
@@ -156,21 +188,21 @@ public class Generator extends JPanel {
 			}
 			String[] parameters = meth.substring(meth.indexOf('(')+1, meth.length()-1).split(", ");
 			
-			JsonFile += "\n\t\t\t{\n\t\t\t\t\"name\": \"" + methName + "\",\n\t\t\t\t\"returns\": \"" + returnType + "\",\n\t\t\t\t\"params\": [";
+			JsonFile += "\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"" + methName + "\",\n\t\t\t\t\t\"returns\": \"" + returnType + "\",\n\t\t\t\t\t\"params\": [";
 			
-			if(parameters[0].equals("")) {
-				JsonFile += "]\n\t\t\t},";
-			} else {
+			if(!parameters[0].equals("")) {
 				for (String t : parameters) {
 					String ident = (t.split(" "))[0];
 					String arg = (t.split(" "))[1];
-					JsonFile += "\n\t\t\t\t\t{\n\t\t\t\t\t\t\"identifier\": \"" + ident + "\",\n\t\t\t\t\t\t\"argument\": \"" + arg + "\"\n\t\t\t\t\t},";
+					JsonFile += "\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"identifier\": \"" + ident + "\",\n\t\t\t\t\t\t\t\"argument\": \"" + arg + "\"\n\t\t\t\t\t\t},";
 				}
 				JsonFile = JsonFile.substring(0, JsonFile.length()-1);
-				JsonFile += "\n\t\t\t\t]\n\t\t\t},";
+				JsonFile += "\n\t\t\t\t\t";
 			}
+			JsonFile += "]\n\t\t\t\t},";
 		}
 		JsonFile = JsonFile.substring(0, JsonFile.length()-1);
+		JsonFile += "\n\t\t\t]";
 	}
 
 	/**
@@ -239,36 +271,33 @@ public class Generator extends JPanel {
 					inherit = doc.select("area").first().attr("alt");
 					if(nameClass.equals("CNod"))
 						inherit = "";
-					
 				} catch(NullPointerException e) {
 					inherit = "";
 				}
 				
 				JsonFile += "\n\t\t\"" + nameClass + "\": {\n\t\t\t\"inherit\": \"" + inherit + "\",\n\t\t\t\"enums\": {";
 				
-				if(enums.isEmpty()) {
-					JsonFile += "},\n\t\t\t\"props\": {";
-				} else {
+				if(!enums.isEmpty()) {
 					addEnums(enums);
 					JsonFile = JsonFile.substring(0, JsonFile.length()-1);
-					JsonFile += "\n\t\t\t},\n\t\t\t\"props\": {";
+					JsonFile += "\n\t\t\t";
 				}
+				JsonFile += "},\n\t\t\t\"props\": {";
 				
-				if(attri.isEmpty()) {
-					JsonFile += "},\n\t\t\t\"methods\": [";
-				} else {
+				if(!attri.isEmpty()) {
 					addProps(attri);
 					JsonFile = JsonFile.substring(0, JsonFile.length()-1);
-					JsonFile += "\n\t\t\t\t]\n\t\t\t},\n\t\t\t\"methods\": [";
+					JsonFile += "\n\t\t\t\t]\n\t\t\t";
 				}
+				JsonFile += "},\n\t\t\t\"methods\": [";
 				
-				if(metho.isEmpty()) {
-					JsonFile += "]\n\t\t},";
-				} else {
+				if(!metho.isEmpty()) {
 					addMethods(metho);
 					JsonFile = JsonFile.substring(0, JsonFile.length()-1);
-					JsonFile += "\n\t\t\t]\n\t\t},";
+					JsonFile += "\n\t\t\t";
 				}
+				JsonFile += "]\n\t\t},";
+
 				compteur++;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -352,17 +381,16 @@ public class Generator extends JPanel {
 			
 			JsonFile += "\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"" + methName + "\",\n\t\t\t\t\t\"returns\": \"" + returnType + "\",\n\t\t\t\t\t\"params\": [";
 			
-			if(parameters[0].equals("")) {
-				JsonFile += "]\n\t\t\t\t},";
-			} else {
+			if(!parameters[0].equals("")) {
 				for (String t : parameters) {
 					String ident = (t.split(" "))[0];
 					String arg = (t.split(" "))[1];
 					JsonFile += "\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"identifier\": \"" + ident + "\",\n\t\t\t\t\t\t\t\"argument\": \"" + arg + "\"\n\t\t\t\t\t\t},";
 				}
 				JsonFile = JsonFile.substring(0, JsonFile.length()-1);
-				JsonFile += "\n\t\t\t\t\t]\n\t\t\t\t},";
-			}		
+				JsonFile += "\n\t\t\t\t\t";
+			}
+			JsonFile += "]\n\t\t\t\t},";
 		}
 	}
 	
